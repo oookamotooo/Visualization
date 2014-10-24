@@ -8,7 +8,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "Vector3.h"
-#include <newton.cpp>
+
 using namespace std;
 
 #define grid_x_start 0
@@ -33,7 +33,6 @@ bool samesign_check(double a, double b){
 	}
 }
 
-// …“c‚É—Š‚Ş[
 bool isCp_check(double test_x[8],double test_y[8],double test_z[8])
 {
 	for (int i = 0; i < 7; i++)
