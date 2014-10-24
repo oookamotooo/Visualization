@@ -96,7 +96,6 @@ void readText(){
 
 	datas.resize(sizeX*sizeY*sizeZ);
 
-
 	FILE *fp = fopen("bfield_near_cusp.txt", "r");
 
 	for(int i=0;i<sizeZ;i++){
@@ -110,7 +109,7 @@ void readText(){
 		}
 	}
 	
-	normalize();
+	//normalize();
 
 	return;
 }
@@ -178,9 +177,24 @@ void FindCP()
 	return;
 }
 
+void drawArrow(const Vector3d &st, const Vector3d &en, const Vector3d &eye)
+{
+	Vector3d dir = (en - st).normalizedVector();
+	Vector3d d = dir.cross(eye).normalizedVector() * dir.length();
+	float p = 0.8f;
+	Vector3d a = p*dir + (1-p)*d;
+	Vector3d b = p*dir - (1-p)*d;
+	glBegin(GL_LINES);
+	glVertex3d(st.x, st.y, st.z);
+	glVertex3d(en.x, en.y, en.z);
+	glVertex3d(a.x, a.y, a.z);
+	glVertex3d(b.x,b.y, b.z);
+	glVertex3d(en.x,en.y,en.z);
+	glEnd();
+}
+
 void display()
 {
-	
   glClear(GL_COLOR_BUFFER_BIT);
 
   //}Œ`‚Ì•`‰æ 
@@ -189,10 +203,13 @@ void display()
   cout << "diso" << endl;
   int sx = 110, sy=55, sz=30;
   
-  /*
+  
   for(int i = grid_z_start; i < grid_z_start + sizeZ; i++)
-	  for(int j=grid_y_start; j<grid_y_start+ sizeY; j++)
-		  for(int k=grid_x_start; k<grid_x_start + sizeX; k++){
+  {
+	  for(int j=grid_y_start; j<grid_y_start + sizeY; j++)
+	  {
+		  for(int k=grid_x_start; k<grid_x_start + sizeX; k++)
+		  {
 				int index = Index(i, j, k);
 				float z = k - sizeZ/2;
 				float y = j - sizeY/2;
@@ -202,8 +219,10 @@ void display()
 				glVertex3f(x+datas[index].x,y+datas[index].y, z+datas[index].z);
 				glEnd();
 			}
+	  }
+  }
 	
-  */
+  /*
   int k=0;
   for(int i = 0; i < sizeY; i++)
 	  for(int j = 0; j < sizeX; j++){
@@ -215,7 +234,7 @@ void display()
 		  glEnd();
 		  k++;
 	  }
-	 
+	 */
 	glFlush();
 }
 
