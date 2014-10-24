@@ -182,3 +182,4 @@ UpgradeLog*.htm
 # Microsoft Fakes
 FakesAssemblies/
 Visualization/fort.9005
+*.sln
