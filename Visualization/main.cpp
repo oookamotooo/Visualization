@@ -32,6 +32,7 @@ bool samesign_check(double a, double b){
 	}
 }
 
+// CPかチェックする
 bool isCp_check(double test_x[8],double test_y[8],double test_z[8])
 {
 	for (int i = 0; i < 7; i++)
