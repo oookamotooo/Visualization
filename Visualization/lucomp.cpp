@@ -1,13 +1,19 @@
-#include <lucomp.h>
+/*
+#include <stdio.h>
 #include <math.h>
+//#include <lucomp.h>
 
-int lucomp(double fjac[3][3],double fvec[3],double *ds,double *dt,double *du)
+#define EPS 1.0E-10
+
+int lucomp(double fjac[3][3],
+		   double fvec[3],
+		   double * ds,double * dt,double * du)
 {
 
   double dx[3],ul[3][3];
-  int l[3];
+  int ierr,l[3];
 
-  lu(fjac,ul,l);
+  lu(fjac,ul,l,ierr);
   solve(ul,fvec,dx,l);
 
   *ds=dx[0]; *dt=dx[1]; *du=dx[2];
@@ -15,7 +21,8 @@ int lucomp(double fjac[3][3],double fvec[3],double *ds,double *dt,double *du)
   return 0;
 }
 
-int lu(double fjac[3][3],double ul[3][3],int l[3])
+int lu(double fjac[3][3],double ul[3][3],
+	   int l[3],int ierr)
 {
 
   int i,j,k,ij,ik,dummy;
@@ -56,8 +63,13 @@ int lu(double fjac[3][3],double ul[3][3],int l[3])
   return 0;
 }
 
-int solve(double ul[3][3],double fvec[3],double dx[3],int l[3])
+int solve(double ul[3][3],double fvec[3],
+		  double dx[3],int l[3])
+//double ul[3][3],fvec[3];
+//double dx[3];
+//int l[3];
 {
+
   int i,j;
 
   for (i=0; i<=2; i++) {
@@ -73,4 +85,4 @@ int solve(double ul[3][3],double fvec[3],double dx[3],int l[3])
   }
 
   return 0;
-}
+}*/

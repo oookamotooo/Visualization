@@ -8,22 +8,34 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "Vector3.h"
+#include "newton.h"
 
-using namespace std;
+//using namespace std;
 
-#define grid_x_start 0
-#define grid_y_start 0
-#define grid_z_start 0
+#define x_start 0
+#define y_start 0
+#define z_start 0
+
+//#define CP_NUM 20
 
 const int sizeX = 91;
 const int sizeY = 171;
 const int sizeZ = 86;
 const int Size = sizeX * sizeY * sizeZ;
 
+extern vector<Vector3d> datas;
+extern double s, t, u;
+extern int cp_count;
+extern Vector3d about_cp[CP_NUM];
+
 Vector3i size(91, 171, 86);
-int Index(int i, int j, int k);
-bool samesign_check(double a, double b);
-bool isCp_check(double test_x[8],double test_y[8],double test_z[8]);
+
+int Index(int i, int j, int k)
+{
+	return k*sizeX*sizeY + j*sizeX + i;
+	//return i*sizeY*sizeZ + j*sizeZ + k;
+	//return k*sizeZ*sizeY + j*sizeZ + i;
+}
 
 bool samesign_check(double a, double b){
 	if(a*b >= 0){
@@ -42,14 +54,13 @@ bool isCp_check(double test_x[8],double test_y[8],double test_z[8])
 			 samesign_check(test_y[i], test_y[j]) || 
 			 samesign_check(test_z[i], test_z[j]))
 			continue;
-
-		printf(" point1: %f %f %f point2: %f %f %f \n", test_x[i], test_y[i], test_z[i], test_x[j], test_y[j], test_z[j]);
+		
+		
+		//printf(" point1: %f %f %f point2: %f %f %f \n", test_x[i], test_y[i], test_z[i], test_x[j], test_y[j], test_z[j]);
 		return true;
 	}
 	return false;
 }
-
-vector<Vector3d> datas;
 
 float phi = 0, theta = 0, fov = 90, radius = 20;
 
@@ -99,18 +110,29 @@ void readText(){
 
 	FILE *fp = fopen("bfield_near_cusp.txt", "r");
 
-	for(int i=0;i<sizeZ;i++){
+	//ˆÈ‰º—v‘‚«Š·‚¦?
+	
+	for(int k=0;k<sizeZ;k++){
 		for(int j=0;j<sizeY;j++){
-			for(int k=0;k<sizeX;k++){
+			for(int i=0;i<sizeX;i++){
 				index = Index(i, j, k);
+
+				fscanf(fp,"%lf %lf %lf", &datas[index].x, &datas[index].y, &datas[index].z);
+				/*
 				fscanf(fp, "%lf",&datas[index].x);
 				fscanf(fp, "%lf",&datas[index].y);
 				fscanf(fp, "%lf",&datas[index].z);
+				*/
 			}
 		}
 	}
-	
-	normalize();
+	/*
+	for(int i=0;i<sizeX*sizeY*sizeZ;i++){
+		fscanf(fp,"%lf %lf %lf", &datas[i].x, &datas[i].y, &datas[i].z);
+	}
+	*/
+
+	//normalize();
 
 	return;
 }
@@ -122,25 +144,25 @@ void inTotest(int i, int j, int k, double test_x[8], double test_y[8], double te
 	index = Index(i, j, k);
 	test_x[0] = datas[index].x;	test_y[0] = datas[index].y;	test_z[0] = datas[index].z;
 
-	index = Index(i, j, k+1);
+	index = Index(i, j, k-1);
 	test_x[1] = datas[index].x;	test_y[1] = datas[index].y;	test_z[1] = datas[index].z;
 
-	index = Index(i, j+1, k);
+	index = Index(i, j-1, k);
 	test_x[2] = datas[index].x;	test_y[2] = datas[index].y;	test_z[2] = datas[index].z;
 	
-	index = Index(i+1, j, k);
+	index = Index(i-1, j, k);
 	test_x[3] = datas[index].x;	test_y[3] = datas[index].y;	test_z[3] = datas[index].z;
 	
-	index = Index(i, j+1, k+1);
+	index = Index(i, j-1, k-1);
 	test_x[4] = datas[index].x;	test_y[4] = datas[index].y;	test_z[4] = datas[index].z;
 	
-	index = Index(i+1, j+1, k);
+	index = Index(i-1, j-1, k);
 	test_x[5] = datas[index].x;	test_y[5] = datas[index].y;	test_z[5] = datas[index].z;
 	
-	index = Index(i+1, j, k+1);
+	index = Index(i-1, j, k-1);
 	test_x[6] = datas[index].x;	test_y[6] = datas[index].y;	test_z[6] = datas[index].z;
 
-	index = Index(i+1, j+1, k+1);
+	index = Index(i-1, j-1, k-1);
 	test_x[7] = datas[index].x;	test_y[7] = datas[index].y;	test_z[7] = datas[index].z;
 
 	return;
@@ -148,15 +170,15 @@ void inTotest(int i, int j, int k, double test_x[8], double test_y[8], double te
 
 
 
-void FindCP()
+void FindCP1()
 {
 	double test_x[8], test_y[8], test_z[8];
 
 	cout << " Find CP start ..." << endl;
 	int numOfCP = 0;
-	for(int i=grid_z_start; i < grid_z_start+sizeZ-1; i++)
-		for(int j=grid_y_start; j < grid_y_start+sizeY-1; j++)
-			for(int k=grid_x_start; k < grid_x_start+sizeX-1; k++){
+	for(int k=z_start+1; k < z_start+sizeZ; k++)
+		for(int j=y_start+1; j < y_start+sizeY; j++)
+			for(int i=x_start+1; i < x_start+sizeX; i++){
 				/*
 				for(int l = 0; l<8; l++)
 				{
@@ -178,44 +200,95 @@ void FindCP()
 	return;
 }
 
+void FindCP2(){
+
+	double test_x[8], test_y[8], test_z[8];
+
+	cp_count = 0; 
+
+	for(int k=z_start+1; k<sizeZ; k++){
+		for(int j=y_start+1; j<sizeY; j++){
+			for(int i=x_start+1; i<sizeX; i++){
+
+				inTotest(i, j, k, test_x, test_y, test_z);
+				//cout << i << "," << j << "," << k << endl;
+				if(isCp_check(test_x, test_y, test_z)){
+					newton1(i, j, k);
+				}
+
+			}
+		}
+	}
+
+	printf("cp count is %d\n", cp_count);
+
+	return;
+
+}
+
 void display()
 {
-	
+  Vector3d plot;	
   glClear(GL_COLOR_BUFFER_BIT);
 
   //}Œ`‚Ì•`‰æ 
   glColor3d(0.0, 0.0, 0.0);
 
   cout << "diso" << endl;
-  int sx = 110, sy=55, sz=30;
+  //int sx = 110, sy=55, sz=30;
   
-  /*
-  for(int i = grid_z_start; i < grid_z_start + sizeZ; i++)
-	  for(int j=grid_y_start; j<grid_y_start+ sizeY; j++)
-		  for(int k=grid_x_start; k<grid_x_start + sizeX; k++){
+  
+  for(int k = z_start; k < z_start + sizeZ; k++)
+	  for(int j = y_start; j < y_start + sizeY; j++)
+		  for(int i = x_start; i < x_start + sizeX; i++){
+			  if(k%10 == 0){
 				int index = Index(i, j, k);
-				float z = k - sizeZ/2;
-				float y = j - sizeY/2;
-				float x = i - sizeX/2;
+				float x = i - (double)sizeX/2;
+				float y = j - (double)sizeY/2;
+				float z = k - (double)sizeZ/2;
 				glBegin(GL_LINES);
 				glVertex3f(x, y, z);
 				glVertex3f(x+datas[index].x,y+datas[index].y, z+datas[index].z);
 				glEnd();
+			  }
 			}
-	
-  */
+
+	glColor3d(1.0, 0.0, 0.0);
+	for(int i=0; i<CP_NUM; i++){
+		printf("i = %d\n", i);
+		if(about_cp[i].x == 0 && about_cp[i].y == 0 && about_cp[i].z == 0) break;
+
+		plot.x = about_cp[i].x - (double)sizeX/2;	plot.y = about_cp[i].y - (double)sizeY/2;	plot.z = about_cp[i].z - (double)sizeZ/2;
+
+		glBegin(GL_LINES);
+		glVertex3f(plot.x-1, plot.y, plot.z);
+		glVertex3f(plot.x+1, plot.y, plot.z);
+		glEnd();
+
+		glBegin(GL_LINES);
+		glVertex3f(plot.x, plot.y-1, plot.z);
+		glVertex3f(plot.x, plot.y+1, plot.z);
+		glEnd();
+
+		glBegin(GL_LINES);
+		glVertex3f(plot.x, plot.y, plot.z-1);
+		glVertex3f(plot.x, plot.y, plot.z+1);
+		glEnd();
+	}
+  /*
   int k=0;
   for(int i = 0; i < sizeY; i++)
 	  for(int j = 0; j < sizeX; j++){
 		  float x = j-sizeX/2;
 		  float y = i-sizeY/2;
+		  //float z = 0;
 		  glBegin(GL_LINES);
 		  glVertex2d(y,x);
 		  glVertex2d(y+datas[k].y, x+datas[k].x);
 		  glEnd();
 		  k++;
 	  }
-	 
+	*/
 	glFlush();
 }
 
@@ -374,10 +447,16 @@ int main(int argc, char *argv[])
 
 			
 		*/
+	//about_cp”z—ñ‚ð‰Šú‰»
+	for(int i=0; i<CP_NUM; i++){
+		about_cp[i].x = 0;	about_cp[i].y = 0;	about_cp[i].z = 0;
+ 	}
 
-	FindCP();
+	//FindCP1();
 
-
+	FindCP2();
+	
+	system("pause");
 	
 	glutInitWindowSize(600, 600);
 	glutInit(&argc, argv);
@@ -393,10 +472,16 @@ int main(int argc, char *argv[])
 	glutKeyboardFunc(keyboard);
 	init();
 	glutMainLoop();
+	
 	return 0;
 }
 
-int Index(int i, int j, int k)
-{
-	return i*sizeX*sizeY + j*sizeX + k;
-}
+/*
+void DrawSphere(const Vector3d cen, const double rad){
+		glPushMatrix();
+		glTranslatef(cen.x, cen.y, cen.z);
+		glRotated(90, 1.0, 0.0, 0.0);
+		glutSolidSphere(rad, 20, 10);
+		glPopMatrix();
+	}
+	*/
