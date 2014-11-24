@@ -77,11 +77,21 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="FileManager.cpp" />
+    <ClCompile Include="Gedesic.cpp" />
+    <ClCompile Include="get_jacob.cpp" />
+    <ClCompile Include="Jacobian.cpp" />
     <ClCompile Include="lucomp.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="newton.cpp" />
+    <ClCompile Include="runge_kutta.cpp" />
+    <ClCompile Include="streamline.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="define.h" />
+    <ClInclude Include="FileManager.h" />
+    <ClInclude Include="get_jacob.h" />
+    <ClInclude Include="Jacobian.h" />
     <ClInclude Include="newton.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

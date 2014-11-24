@@ -4,11 +4,13 @@
 #include <string>
 #include <vector>
 #include <gl/glut.h>
-
+#include "FileManager.h"
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include "Vector3.h"
 #include "newton.h"
+#include "get_jacob.h"
+#include "define.h"
 
 //using namespace std;
 
@@ -18,15 +20,21 @@
 
 //#define CP_NUM 20
 
+/*
 const int sizeX = 91;
 const int sizeY = 171;
 const int sizeZ = 86;
 const int Size = sizeX * sizeY * sizeZ;
+*/
 
-extern vector<Vector3d> datas;
-extern double s, t, u;
-extern int cp_count;
-extern Vector3d about_cp[CP_NUM];
+vector<Vector3d> datas;
+double s, t, u;
+double jacob[3][3];
+int cp_count;
+Vector3d cp[CP_NUM];
+Vector3d round_cp[CP_NUM][round_num];
+
+//double runge_kutta(double x, double y, double z, int i, double step);
 
 Vector3i size(91, 171, 86);
 
@@ -45,14 +53,14 @@ bool samesign_check(double a, double b){
 	}
 }
 
-bool isCp_check(double test_x[8],double test_y[8],double test_z[8])
+bool isCp_check(Vector3d test[8])
 {
 	for (int i = 0; i < 7; i++)
 	for (int j = i+1; j < 8; j++) 
 	{
-		if ( samesign_check(test_x[i], test_x[j]) || 
-			 samesign_check(test_y[i], test_y[j]) || 
-			 samesign_check(test_z[i], test_z[j]))
+		if ( samesign_check(test[i].x, test[j].x) || 
+			 samesign_check(test[i].y, test[j].y) || 
+			 samesign_check(test[i].z, test[j].z))
 			continue;
 		
 		
@@ -63,7 +71,7 @@ bool isCp_check(double test_x[8],double test_y[8],double test_z[8])
 }
 
 float phi = 0, theta = 0, fov = 90, radius = 20;
-
+/*
 bool readBinary( string filename, int sizeX, int sizeY, int sizeZ, float *data)
 {
 	FILE *fp = fopen(filename.c_str(), "rb");
@@ -94,7 +102,7 @@ bool readBinary( string filename, int sizeX, int sizeY, int sizeZ, float *data)
 	fclose(fp);
 	return true;
 }
-
+*/
 
 void normalize()
 {
@@ -133,43 +141,69 @@ void readText(){
 	*/
 
 	//normalize();
+	fclose(fp);
+	return;
+}
+
+void read_cp(){
+	FILE *fp = fopen("cp_sub.txt", "r");
+
+	for(int i=0; i < 4;/*CP_NUM;*/ i++){
+		fscanf(fp,"%lf %lf %lf", &cp[i].x, &cp[i].y, &cp[i].z);
+	}
+
+	printf("Read CP success!");
+
+	fclose(fp);
+	return;
+}
+
+void read_round(int i){
+	char filepath[256];
+	sprintf(filepath, "round_point%d.txt", i);
+	FILE *fp = fopen(filepath, "r");
+	
+	for(int s=0; s<round_num; s++){
+		fscanf(fp, "%lf %lf %lf", &round_cp[i][s].x, &round_cp[i][s].y, &round_cp[i][s].z);
+	}
+
+	fclose(fp);
 
 	return;
 }
 
-
-void inTotest(int i, int j, int k, double test_x[8], double test_y[8], double test_z[8]){
+void inTotest(int i, int j, int k, Vector3d test[8]){
 	int index;
 
-	index = Index(i, j, k);
-	test_x[0] = datas[index].x;	test_y[0] = datas[index].y;	test_z[0] = datas[index].z;
+	index = Index(i-1, j-1, k-1);
+	test[0].x = datas[index].x;	test[0].y = datas[index].y;	test[0].z = datas[index].z;
+
+	index = Index(i, j-1, k-1);
+	test[1].x = datas[index].x;	test[1].y = datas[index].y;	test[1].z = datas[index].z;
 
 	index = Index(i, j, k-1);
-	test_x[1] = datas[index].x;	test_y[1] = datas[index].y;	test_z[1] = datas[index].z;
-
-	index = Index(i, j-1, k);
-	test_x[2] = datas[index].x;	test_y[2] = datas[index].y;	test_z[2] = datas[index].z;
-	
-	index = Index(i-1, j, k);
-	test_x[3] = datas[index].x;	test_y[3] = datas[index].y;	test_z[3] = datas[index].z;
-	
-	index = Index(i, j-1, k-1);
-	test_x[4] = datas[index].x;	test_y[4] = datas[index].y;	test_z[4] = datas[index].z;
-	
-	index = Index(i-1, j-1, k);
-	test_x[5] = datas[index].x;	test_y[5] = datas[index].y;	test_z[5] = datas[index].z;
+	test[2].x = datas[index].x;	test[2].y = datas[index].y;	test[2].z = datas[index].z;
 	
 	index = Index(i-1, j, k-1);
-	test_x[6] = datas[index].x;	test_y[6] = datas[index].y;	test_z[6] = datas[index].z;
+	test[3].x = datas[index].x;	test[3].y = datas[index].y;	test[3].z = datas[index].z;
+	
+	index = Index(i-1, j-1, k);
+	test[4].x = datas[index].x;	test[4].y = datas[index].y;	test[4].z = datas[index].z;
+	
+	index = Index(i, j-1, k);
+	test[5].x = datas[index].x;	test[5].y = datas[index].y;	test[5].z = datas[index].z;
+	
+	index = Index(i, j, k);
+	test[6].x = datas[index].x;	test[6].y = datas[index].y;	test[6].z = datas[index].z;
 
-	index = Index(i-1, j-1, k-1);
-	test_x[7] = datas[index].x;	test_y[7] = datas[index].y;	test_z[7] = datas[index].z;
+	index = Index(i-1, j, k);
+	test[7].x = datas[index].x;	test[7].y = datas[index].y;	test[7].z = datas[index].z;
 
 	return;
 }
 
 
-
+/*
 void FindCP1()
 {
 	double test_x[8], test_y[8], test_z[8];
@@ -179,15 +213,7 @@ void FindCP1()
 	for(int k=z_start+1; k < z_start+sizeZ; k++)
 		for(int j=y_start+1; j < y_start+sizeY; j++)
 			for(int i=x_start+1; i < x_start+sizeX; i++){
-				/*
-				for(int l = 0; l<8; l++)
-				{
-					int index = Index(i + (l&1), j + ((l>>1)&1), k + ((l>>2)&1) );
-					test_x[l] = datas[index].x;
-					test_y[l] = datas[index].y;
-					test_z[l] = datas[index].z;
-				}*/
-
+				
 				inTotest(i, j, k, test_x, test_y, test_z);
 				
 				if( isCp_check(test_x, test_y, test_z) ){
@@ -199,10 +225,11 @@ void FindCP1()
 	cout << numOfCP << endl;
 	return;
 }
+*/
 
 void FindCP2(){
 
-	double test_x[8], test_y[8], test_z[8];
+	Vector3d test[8];
 
 	cp_count = 0; 
 
@@ -210,10 +237,11 @@ void FindCP2(){
 		for(int j=y_start+1; j<sizeY; j++){
 			for(int i=x_start+1; i<sizeX; i++){
 
-				inTotest(i, j, k, test_x, test_y, test_z);
+				inTotest(i, j, k, test);
 				//cout << i << "," << j << "," << k << endl;
-				if(isCp_check(test_x, test_y, test_z)){
+				if(isCp_check(test)){
 					newton1(i, j, k);
+					printf("Not same sign find (%d / %d)", k*sizeX*sizeY + j*sizeX + i, sizeX*sizeY*sizeZ);
 				}
 
 			}
@@ -226,6 +254,7 @@ void FindCP2(){
 
 }
 
+
 void display()
 {
   Vector3d plot;	
@@ -237,11 +266,11 @@ void display()
   cout << "diso" << endl;
   //int sx = 110, sy=55, sz=30;
   
-  
+  /*
   for(int k = z_start; k < z_start + sizeZ; k++)
 	  for(int j = y_start; j < y_start + sizeY; j++)
 		  for(int i = x_start; i < x_start + sizeX; i++){
-			  if(k%10 == 0){
+			  //if(k%10 == 0){
 				int index = Index(i, j, k);
 				float x = i - (double)sizeX/2;
 				float y = j - (double)sizeY/2;
@@ -250,15 +279,102 @@ void display()
 				glVertex3f(x, y, z);
 				glVertex3f(x+datas[index].x,y+datas[index].y, z+datas[index].z);
 				glEnd();
-			  }
-			}
+			  //}
+			}*/
+  glBegin(GL_LINES);
+  glVertex3f(-(double)sizeX/2.0,-(double)sizeY/2.0,-(double)sizeZ/2.0);
+  glVertex3f(-(double)sizeX/2.0,-(double)sizeY/2.0,(double)sizeZ/2.0);
+  glEnd;
+  glBegin(GL_LINES);
+  glVertex3f(-(double)sizeX/2.0,(double)sizeY/2.0,-(double)sizeZ/2.0);
+  glVertex3f(-(double)sizeX/2.0,(double)sizeY/2.0,(double)sizeZ/2.0);
+  glEnd;
+  glBegin(GL_LINES);
+  glVertex3f((double)sizeX/2.0,-(double)sizeY/2.0,-(double)sizeZ/2.0);
+  glVertex3f((double)sizeX/2.0,-(double)sizeY/2.0,(double)sizeZ/2.0);
+  glEnd;
+  glBegin(GL_LINES);
+  glVertex3f((double)sizeX/2.0,(double)sizeY/2.0,-(double)sizeZ/2.0);
+  glVertex3f((double)sizeX/2.0,(double)sizeY/2.0,(double)sizeZ/2.0);
+  glEnd;
+  glBegin(GL_LINES);
+  glVertex3f(-(double)sizeX/2.0,-(double)sizeY/2.0,(double)sizeZ/2.0);
+  glVertex3f(-(double)sizeX/2.0,(double)sizeY/2.0,(double)sizeZ/2.0);
+  glEnd;
+  glBegin(GL_LINES);
+  glVertex3f((double)sizeX/2.0,-(double)sizeY/2.0,(double)sizeZ/2.0);
+  glVertex3f((double)sizeX/2.0,(double)sizeY/2.0,(double)sizeZ/2.0);
+  glEnd;
+  glBegin(GL_LINES);
+  glVertex3f(-(double)sizeX/2.0,-(double)sizeY/2.0,-(double)sizeZ/2.0);
+  glVertex3f(-(double)sizeX/2.0,(double)sizeY/2.0,-(double)sizeZ/2.0);
+  glEnd;
+  glBegin(GL_LINES);
+  glVertex3f((double)sizeX/2.0,-(double)sizeY/2.0,-(double)sizeZ/2.0);
+  glVertex3f((double)sizeX/2.0,(double)sizeY/2.0,-(double)sizeZ/2.0);
+  glEnd;
+
+  glBegin(GL_LINES);
+  glVertex3f(-(double)sizeX/2.0,(double)sizeY/2.0,(double)sizeZ/2.0);
+  glVertex3f((double)sizeX/2.0,(double)sizeY/2.0,(double)sizeZ/2.0);
+  glEnd;
+  glBegin(GL_LINES);
+  glVertex3f(-(double)sizeX/2.0,-(double)sizeY/2.0,(double)sizeZ/2.0);
+  glVertex3f((double)sizeX/2.0,-(double)sizeY/2.0,(double)sizeZ/2.0);
+  glEnd;
+
+  glBegin(GL_LINES);
+  glVertex3f(-(double)sizeX/2.0,(double)sizeY/2.0,-(double)sizeZ/2.0);
+  glVertex3f((double)sizeX/2.0,(double)sizeY/2.0,-(double)sizeZ/2.0);
+  glEnd;
+  glBegin(GL_LINES);
+  glVertex3f(-(double)sizeX/2.0,-(double)sizeY/2.0,-(double)sizeZ/2.0);
+  glVertex3f((double)sizeX/2.0,-(double)sizeY/2.0,-(double)sizeZ/2.0);
+  glEnd;
+
+  glColor3d(1.0,0.0,0.0);
+  glBegin(GL_LINES);
+  glVertex3f(-(double)sizeX/2.0,0,0);
+  glVertex3f((double)sizeX/2.0,0,0);
+  glEnd;
+  glColor3d(0.0,0.0,1.0);
+  glBegin(GL_LINES);
+  glVertex3f(0,-(double)sizeY/2.0,0);
+  glVertex3f(0,(double)sizeY/2.0,0);
+  glEnd;
+  glColor3d(0.0,1.0,0.0);
+  glBegin(GL_LINES);
+  glVertex3f(0,0,-(double)sizeZ/2.0);
+  glVertex3f(0,0,(double)sizeZ/2.0);
+  glEnd;
+
+  Vector3d earth;
+  earth = Vector3d(60.0-(double)sizeX/2.0, 82.0-(double)sizeY/2.0, -13.0-(double)sizeZ/2.0);
+
+  glColor3d(0.0, 1.0, 0.0);
+	glBegin(GL_LINES);
+	glVertex3f(earth.x-1, earth.y, earth.z);
+	glVertex3f(earth.x+1, earth.y, earth.z);
+	glEnd();
+
+	glBegin(GL_LINES);
+	glVertex3f(earth.x, earth.y-1, earth.z);
+	glVertex3f(earth.x, earth.y+1, earth.z);
+	glEnd();
+
+	glBegin(GL_LINES);
+	glVertex3f(earth.x, earth.y, earth.z-1);
+	glVertex3f(earth.x, earth.y, earth.z+1);
+	glEnd();
 
 	glColor3d(1.0, 0.0, 0.0);
 	for(int i=0; i<CP_NUM; i++){
 		printf("i = %d\n", i);
-		if(about_cp[i].x == 0 && about_cp[i].y == 0 && about_cp[i].z == 0) break;
+		if(cp[i].x == 0 && cp[i].y == 0 && cp[i].z == 0) break;
 
-		plot.x = about_cp[i].x - (double)sizeX/2;	plot.y = about_cp[i].y - (double)sizeY/2;	plot.z = about_cp[i].z - (double)sizeZ/2;
+		//printf("%f %f %f\n", cp[i].x, cp[i].y, cp[i].z);
+
+		plot.x = cp[i].x - (double)sizeX/2;	plot.y = cp[i].y - (double)sizeY/2;	plot.z = cp[i].z - (double)sizeZ/2;
 
 		glBegin(GL_LINES);
 		glVertex3f(plot.x-1, plot.y, plot.z);
@@ -275,6 +391,59 @@ void display()
 		glVertex3f(plot.x, plot.y, plot.z+1);
 		glEnd();
 	}
+
+
+	Vector3d s_line;
+	int remake;
+	double step;
+	double len=0.1, d_size;
+	double first_len = 5.0;
+	//double tmp;
+
+	//printf("%f\n", cp[0].x);
+	//printf("d-series = %f %f %f\n", dx1, dy1, dz1);
+	//streamline
+	for(int t=1; t<2; t++){
+		if(t == 2){
+			step = 0.1;
+		}else{
+			step = -0.1;
+		}
+	//int a=-40, b=40; 
+	for(int s = 0; s<round_num; s++){
+		s_line = (cp[t] + round_cp[t][s]*(first_len));
+		glColor3d(0.0, 0.0, 1.0);
+		streamline(s_line, len, step);
+	}
+	}
+
+	step = -0.1;
+	Vector3d e_start[4];
+	e_start[0].x = earth.x+(double)sizeX/2.0;	e_start[0].y = earth.y+(double)sizeY/2.0;	e_start[0].z = earth.z +(double)sizeZ/2.0+ 20;
+	e_start[1].x = earth.x+(double)sizeX/2.0 + 3;	e_start[1].y = earth.y+(double)sizeY/2.0;	e_start[1].z = earth.z +(double)sizeZ/2.0+ 20;
+	e_start[2].x = earth.x+(double)sizeX/2.0 - 4;	e_start[2].y = earth.y+(double)sizeY/2.0;	e_start[2].z = earth.z +(double)sizeZ/2.0+ 20;
+	e_start[3].x = earth.x+(double)sizeX/2.0 - 6;	e_start[3].y = earth.y+(double)sizeY/2.0;	e_start[3].z = earth.z +(double)sizeZ/2.0+ 20;
+	glColor3d(0.0, 1.0, 0.0);
+	for(int l=0; l<4; l++){
+		streamline(e_start[l], len, step);
+	}
+
+	/*
+	glBegin(GL_LINES);
+	glVertex3f(e_start.x-1, e_start.y, e_start.z);
+	glVertex3f(e_start.x+1, e_start.y, e_start.z);
+	glEnd();
+
+	glBegin(GL_LINES);
+	glVertex3f(e_start.x, e_start.y-1, e_start.z);
+	glVertex3f(e_start.x, e_start.y+1, e_start.z);
+	glEnd();
+
+	glBegin(GL_LINES);
+	glVertex3f(e_start.x, e_start.y, e_start.z-1);
+	glVertex3f(e_start.x, e_start.y, e_start.z+1);
+	glEnd();
+	*/
   /*
   int k=0;
   for(int i = 0; i < sizeY; i++)
@@ -389,7 +558,19 @@ void toVector2(float *data)
 		}
 	}
 }
+/*
+void output_jacob(double x, double y, double z, double jacob[3][3]){
+	FILE *fp = fopen("jacob.txt", "w");
 
+	for(int a=0; a < CP_NUM; a++){
+		if(cp[a].x == 0 && cp[a].y == 0 && cp[a].z == 0) break;
+
+		get_jacob(cp[a].x, cp[a].y, cp[a].z, jacob);
+		fprintf(fp)
+	}
+}*/
+
+/*
 void debugOutput()
 {
 	FILE *fp = fopen("test2.txt", "w");
@@ -406,14 +587,14 @@ void debugOutput()
 	}
 	cout << "‘‚«o‚µŠ®—¹"<<endl;
 }
+*/
 
 int main(int argc, char *argv[])
 {
-	Vector3i s;
-	Vector3i a = Vector3i()+s;
-
+	
 	cout << size << endl;
 	readText();
+	printf("readText done.\n");
 	
 
 	//“Ç‚Ýž‚Ý•”•ª
@@ -428,35 +609,69 @@ int main(int argc, char *argv[])
 	cout << "VectorŒ^‚Ö‚Ì•ÏŠ·Š®—¹" << endl;
 	*/
 
-		
-	/*
-	float epsilon = 0.00000000000000001;
-	for(int i=0; i<sizeX; i++)
-		for(int j=0; j<sizeY; j++)
-			for(int k=0; k<sizeZ; k++)
-			{
-				index = Index(i,j,k);
-
-				if( datas[index].x == 0 &&
-					datas[index].y == 0 &&
-					datas[index].z == 0 )
-				{
-					cout << i << "," << j << "," << k << endl;
-				}
-			}
-
-			
-		*/
-	//about_cp”z—ñ‚ð‰Šú‰»
+	//cp”z—ñ‚ð‰Šú‰»
 	for(int i=0; i<CP_NUM; i++){
-		about_cp[i].x = 0;	about_cp[i].y = 0;	about_cp[i].z = 0;
+		cp[i].x = 0;	cp[i].y = 0;	cp[i].z = 0;
  	}
 
 	//FindCP1();
 
+	/*
 	FindCP2();
+	printf("Find CP done.\n");
+
+	for(int i=0; i<CP_NUM; i++){
+		printf("cp%d = (%.10lf, %.10lf, %.10lf)\n", i, cp[i].x, cp[i].y, cp[i].z);
+	}*/
+
 	
+	read_cp();
+	printf("read_cp done.\n");
+
+	for(int i=0; i<4; i++){
+		read_round(i);
+	}
+	printf("read_round done.\n");
+	
+
+	/*
+	for(int i=1; i<2; i++){
+		Geodesic(cp, round_cp, i);
+	}
+	
+	printf("Geodesic done.\n");
+	*/
+	
+	/*
+	vector<Jacobian> jacobians;
+	FileManager::ReadJacobianData("p_eigen_out.txt", jacobians);
+	for(auto it = jacobians.begin(); it != jacobians.end(); it++)
+		cout << (*it) << endl;
 	system("pause");
+	*/
+	
+	/*
+	//Jacobian“±o
+	FILE *fp2 = fopen("new_jacob2.txt", "w");
+
+	for(int a=0; a < CP_NUM; a++){
+		if(cp[a].x == 0 && cp[a].y == 0 && cp[a].z == 0) break;
+
+		get_jacob(cp[a].x, cp[a].y, cp[a].z, jacob);
+		
+		fprintf(fp2, "%lf %lf %lf\n", cp[a].x, cp[a].y, cp[a].z);
+		for(int j=0;j<3;j++){
+			for(int i=0;i<3;i++){
+				fprintf(fp2, "%.10lf ,",jacob[i][j]);
+			}
+		}
+		fprintf(fp2, "\n");
+	}
+	fclose(fp2);
+	printf("Get Jacob done.\n");
+	*/
+
+	//streamline •`‰æ
 	
 	glutInitWindowSize(600, 600);
 	glutInit(&argc, argv);

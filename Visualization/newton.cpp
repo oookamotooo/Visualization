@@ -12,21 +12,13 @@
 #include "newton.h"
 #include "Vector3.h"
 #include <vector>
-
-#define sizeX 91
-#define sizeY 171
-#define sizeZ 86
+#include "define.h"
 
 #define NTRIAL 50000
 #define EPS 1.0E-10
 
-vector<Vector3d> datas;
+// kokomadayattenaiyo main to jacob dakedayo
 
-double s, t, u;
-
-int cp_count;
-
-Vector3d about_cp[CP_NUM];
 
 /*
 extern double x_data[sizeX][sizeY][sizeZ];
@@ -153,7 +145,7 @@ int newton1(int x,int y,int z/*double *s,double *t,double *u*/)
 	double ds,dt,du;
 	double norm1,norm2;
 
-	int bunkatsu = 100;
+	double bunkatsu = 500.0;
 
 	set_data(x,y,z);
 
@@ -184,10 +176,10 @@ int newton1(int x,int y,int z/*double *s,double *t,double *u*/)
 				printf("%f %f %f\n", s, t, u);
 				printf("%f\n", Vx(s,t,u));
 				*/
-				if (fabs(Vx(s,t,u)) < 0.0001 && fabs(Vy(s,t,u)) < 0.0001 && fabs(Vz(s,t,u)) < 0.0001) {
+				if (fabs(Vx(s,t,u)) < 0.00001 && fabs(Vy(s,t,u)) < 0.00001 && fabs(Vz(s,t,u)) < 0.00001) {
 					printf("find\n");
-					about_cp[cp_count].x = (double)x+s;	about_cp[cp_count].y = (double)y+t;	about_cp[cp_count].z = (double)z+u;
-					printf("%f, %f, %f\n", about_cp[cp_count].x, about_cp[cp_count].y, about_cp[cp_count].z);
+					cp[cp_count].x = (double)x+s;	cp[cp_count].y = (double)y+t;	cp[cp_count].z = (double)z+u;
+					printf("%f, %f, %f\n", cp[cp_count].x, cp[cp_count].y, cp[cp_count].z);
 					cp_count++;
 					x_c=bunkatsu+1; y_c=bunkatsu+1; z_c=bunkatsu+1; break;
 				}
@@ -195,13 +187,13 @@ int newton1(int x,int y,int z/*double *s,double *t,double *u*/)
 		}
 		//printf("%d %d %d : x = %d\n", x, y, z, x_c);
     }
-/*
-	for (count=1; count<=NTRIAL; count++) {
+	/*
+	for (int count=1; count<=NTRIAL; count++) {
       fvec[0]=-Vx(s,t,u); fvec[1]=-Vy(s,t,u); fvec[2]=-Vz(s,t,u);
       fjac[0][0]=Vxs(s,t,u); fjac[0][1]=Vxt(s,t,u); fjac[0][2]=Vxu(s,t,u);
       fjac[1][0]=Vys(s,t,u); fjac[1][1]=Vyt(s,t,u); fjac[1][2]=Vyu(s,t,u);
       fjac[2][0]=Vzs(s,t,u); fjac[2][1]=Vzt(s,t,u); fjac[2][2]=Vzu(s,t,u);
-      lucomp(fjac,fvec,&ds,&dt,&du);
+      //lucomp(fjac,fvec,&ds,&dt,&du);
       norm1=sqrt(ds*ds+dt*dt+du*du);
       s=s+ds; t=t+dt; u=u+du;
       norm2=sqrt(Vx(s,t,u)*Vx(s,t,u)+Vy(s,t,u)*Vy(s,t,u)
@@ -212,6 +204,7 @@ int newton1(int x,int y,int z/*double *s,double *t,double *u*/)
     }
     return -1;
 	*/
+	
 	/*
 	
     for (count=1; count<=NTRIAL; count++) {

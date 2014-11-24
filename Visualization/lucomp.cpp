@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <math.h>
 //#include <lucomp.h>
+#include "newton.h"
 
 #define EPS 1.0E-10
 
@@ -85,4 +86,5 @@ int solve(double ul[3][3],double fvec[3],
   }
 
   return 0;
-}*/
+}
+*/
